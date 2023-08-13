@@ -4,9 +4,13 @@ const NODE_TYPE = {
 };
 
 const EQUATION_TOKENS = {
-	VALUE: 0,
-	OPERATION: 1,
-	NESTED: 2
+	MULTIPLY: 0,
+	DIVIDE: 1,
+	SUBTRACT: 2,
+	ADD: 3,
+	EXPONENT: 4,
+	NUMBER: 5,
+	NESTED: 6
 };
 
 const CHAR_TYPE = {
@@ -20,6 +24,15 @@ const CHAR_TYPE = {
 	PARENTHESIS_CLOSE: 7
 };
 
+const OPERATION_PRIORITY = {
+	MULTIPLY: 1,
+	DIVIDE: 1,
+	ADD: 2,
+	SUBTRACT: 2,
+	EXPONENT: 0
+};
+const PRIORITY_MAX = 2;
+
 class Equation {
 	constructor(_equation) {
 		this.m_equation = _equation;
@@ -27,15 +40,20 @@ class Equation {
 
 	Compile() {
 		// tokenization
-		let tokenized_equation = this.Tokenize(this.m_equation);
+		let [tokenized_equation, operation_priority] = this.Tokenize(this.m_equation);
 		while(tokenized_equation != null) {
-			console.log(tokenized_equation.m_value);
+			//console.log(tokenized_equation.m_value + " : " + tokenized_equation.GetType());
 			tokenized_equation = tokenized_equation.Next();
 		}
+		console.log(operation_priority);
 		// tracking position of each operation
 		// building the tree
 	}
 
+	FindOperations() {
+	}
+
+	// note: clean up code, disallow numbers with 2 "."
 	Tokenize(_equationString) {
 		const starting_token = new Token(null, null);
 		let current_token_elem = starting_token;
@@ -43,6 +61,10 @@ class Equation {
 		let numeric_value = "";
 		let parenthesis_counter = 0;
 		let parenthesis_content = "";
+
+		const operation_priority = new Array(PRIORITY_MAX + 1);
+		for(let i=0;i<PRIORITY_MAX + 1;++i)
+			operation_priority[i] = [];
 
 		for(const c of _equationString) {
 			const char_type = this.GetTokenType(c);
@@ -84,7 +106,7 @@ class Equation {
 			if(char_type != previous_token) {
 				// closing
 				if(previous_token == CHAR_TYPE.NUMBER) {
-					const new_token = new Token(previous_token, parseFloat(numeric_value));
+					const new_token = new Token(EQUATION_TOKENS.NUMBER, parseFloat(numeric_value));
 					current_token_elem.SetNext(new_token);
 					current_token_elem = new_token;
 					numeric_value = "";
@@ -97,29 +119,34 @@ class Equation {
 						numeric_value += c;
 						break;
 					case CHAR_TYPE.MULTIPLY:
-						new_token = new Token(CHAR_TYPE.MULTIPLY, c);
+						new_token = new Token(EQUATION_TOKENS.MULTIPLY, c);
 						current_token_elem.SetNext(new_token);
 						current_token_elem = new_token;
+						operation_priority[OPERATION_PRIORITY.MULTIPLY].push(new_token);
 						break;
 					case CHAR_TYPE.DIVIDE:
-						new_token = new Token(CHAR_TYPE.DIVIDE, c);
+						new_token = new Token(EQUATION_TOKENS.DIVIDE, c);
 						current_token_elem.SetNext(new_token);
 						current_token_elem = new_token;
+						operation_priority[OPERATION_PRIORITY.DIVIDE].push(new_token);
 						break;
 					case CHAR_TYPE.ADD:
-						new_token = new Token(CHAR_TYPE.ADD, c);
+						new_token = new Token(EQUATION_TOKENS.ADD, c);
 						current_token_elem.SetNext(new_token);
 						current_token_elem = new_token;
+						operation_priority[OPERATION_PRIORITY.ADD].push(new_token);
 						break;
 					case CHAR_TYPE.SUBTRACT:
-						new_token = new Token(CHAR_TYPE.SUBTRACT, c);
+						new_token = new Token(EQUATION_TOKENS.SUBTRACT, c);
 						current_token_elem.SetNext(new_token);
 						current_token_elem = new_token;
+						operation_priority[OPERATION_PRIORITY.SUBTRACT].push(new_token);
 						break;
 					case CHAR_TYPE.EXPONENT:
-						new_token = new Token(CHAR_TYPE.EXPONENT, c);
+						new_token = new Token(EQUATION_TOKENS.EXPONENT, c);
 						current_token_elem.SetNext(new_token);
 						current_token_elem = new_token;
+						operation_priority[OPERATION_PRIORITY.EXPONENT].push(new_token);
 						break;
 					case CHAR_TYPE.PARENTHESIS_OPEN:
 						++ parenthesis_counter;
@@ -130,13 +157,13 @@ class Equation {
 		}
 
 		if(previous_token == CHAR_TYPE.NUMBER) {
-			const new_token = new Token(previous_token, parseFloat(numeric_value));
+			const new_token = new Token(EQUATION_TOKENS.NUMBER, parseFloat(numeric_value));
 			current_token_elem.SetNext(new_token);
 			current_token_elem = new_token;
 			numeric_value = "";
 		}
 
-		return starting_token.Next();
+		return [ starting_token.Next(), operation_priority ];
 	}
 
 	GetTokenType(_c) {
@@ -185,6 +212,10 @@ class Token {
 
 	Next() {
 		return this.m_next;
+	}
+
+	GetType() {
+		return this.m_tokenType;
 	}
 }
 
