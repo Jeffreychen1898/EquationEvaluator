@@ -40,7 +40,7 @@ class Equation {
 		const starting_token = new Token(null, null);
 		let current_token_elem = starting_token;
 		let previous_token = null;
-		let numeric_value = 0;
+		let numeric_value = "";
 		let parenthesis_counter = 0;
 		let parenthesis_content = "";
 
@@ -73,7 +73,7 @@ class Equation {
 			if(char_type == previous_token) {
 				if(char_type == CHAR_TYPE.NUMBER) {
 					// handle decimal points
-					numeric_value = numeric_value * 10 + parseInt(c);
+					numeric_value += c;
 					continue;
 				}
 
@@ -84,17 +84,17 @@ class Equation {
 			if(char_type != previous_token) {
 				// closing
 				if(previous_token == CHAR_TYPE.NUMBER) {
-					const new_token = new Token(previous_token, numeric_value);
+					const new_token = new Token(previous_token, parseFloat(numeric_value));
 					current_token_elem.SetNext(new_token);
 					current_token_elem = new_token;
-					numeric_value = 0;
+					numeric_value = "";
 				}
 
 				// opening
 				let new_token;
 				switch(char_type) {
 					case CHAR_TYPE.NUMBER:
-						numeric_value = parseInt(c);
+						numeric_value += c;
 						break;
 					case CHAR_TYPE.MULTIPLY:
 						new_token = new Token(CHAR_TYPE.MULTIPLY, c);
@@ -130,10 +130,10 @@ class Equation {
 		}
 
 		if(previous_token == CHAR_TYPE.NUMBER) {
-			const new_token = new Token(previous_token, numeric_value);
+			const new_token = new Token(previous_token, parseFloat(numeric_value));
 			current_token_elem.SetNext(new_token);
 			current_token_elem = new_token;
-			numeric_value = 0;
+			numeric_value = "";
 		}
 
 		return starting_token.Next();
