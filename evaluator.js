@@ -49,11 +49,11 @@ class Equation {
 				let left_token = operation_token.Previous();
 				let right_token = operation_token.Next();
 
-				let operation_previous_token = left_token.Previous();
-				let operation_next_token = right_token.Next();
-
 				if(left_token == null || right_token == null || left_token.IsNull())
 					throw new Error("Syntax Error. Operation must be between 2 numbers");
+
+				let operation_previous_token = left_token.Previous();
+				let operation_next_token = right_token.Next();
 
 				// convert left and right token to tree node
 				if(!(left_token instanceof TreeNode))
