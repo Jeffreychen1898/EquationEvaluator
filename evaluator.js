@@ -44,7 +44,6 @@ class Equation {
 
 		for(let i=0;i<operation_priority.length;++i) {
 			for(let j=0;j<operation_priority[i].length;++j) {
-				tokenized_equation.PrintList();
 				let operation_token = operation_priority[i][j];
 
 				let left_token = operation_token.Previous();
@@ -52,7 +51,6 @@ class Equation {
 
 				let operation_previous_token = left_token.Previous();
 				let operation_next_token = right_token.Next();
-				console.log(operation_next_token);
 
 				if(left_token == null || right_token == null || left_token.IsNull())
 					throw new Error("Syntax Error. Operation must be between 2 numbers");
@@ -61,13 +59,17 @@ class Equation {
 				if(!(left_token instanceof TreeNode))
 					if(left_token.GetType() == EQUATION_TOKENS.NUMBER) //validate left is numeric value
 						left_token = new TreeNode(EQUATION_TOKENS.NUMBER, left_token.GetValue());
-					else // handle nested
+					else if(left_token.GetType() == EQUATION_TOKENS.NESTED)
+						left_token = this.GenTree(left_token.GetValue());
+					else
 						throw new Error("Syntax Error. Operation must be between 2 numbers");
 
 				if(!(right_token instanceof TreeNode))
 					if(right_token.GetType() == EQUATION_TOKENS.NUMBER) // validate right is numeric value
 						right_token = new TreeNode(EQUATION_TOKENS.NUMBER, right_token.GetValue());
-					else // handle nested
+					else if(right_token.GetType() == EQUATION_TOKENS.NESTED)
+						right_token = this.GenTree(right_token.GetValue());
+					else
 						throw new Error("Syntax Error. Operation must be between 2 numbers");
 
 				// generate tree node for the operation
@@ -251,7 +253,7 @@ class Token {
 			current_node = current_node.Next();
 		}
 
-		console.log(result);
+		ionsole.log(result);
 	}
 
 	IsNull() {
