@@ -9,10 +9,11 @@ function Initialize() {
 
 function Evaluate(_equation) {
 	const equation = new Equation(_equation);
-	equation.Compile();
+	let ans = equation.Compile();
 
 	const output_text = document.getElementById("output");
-	output_text.innerText = "Output: " + equation.Calculate();
+	//output_text.innerText = "Output: " + equation.Calculate();
+	output_text.innerText = "Output: " + ans;
 }
 
 window.addEventListener("load", () => {

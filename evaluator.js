@@ -1,7 +1,11 @@
-const NODE_TYPE = {
-	OPERATION: 0,
-	VALUE: 1
-};
+/*const NODE_TYPE = {
+	NUMBER: 0,
+	MULTIPLY: 1,
+	DIVIDE: 2,
+	ADD: 3,
+	SUBTRACT: 4,
+	EXPONENT: 5
+};*/
 
 const EQUATION_TOKENS = {
 	MULTIPLY: 0,
@@ -39,19 +43,130 @@ class Equation {
 	}
 
 	Compile() {
-		// tokenization
-		let [tokenized_equation, operation_priority] = this.Tokenize(this.m_equation);
-		while(tokenized_equation != null) {
-			//console.log(tokenized_equation.m_value + " : " + tokenized_equation.GetType());
-			console.log(tokenized_equation.Previous(), tokenized_equation, tokenized_equation.Next());
-			tokenized_equation = tokenized_equation.Next();
-		}
-		//console.log(operation_priority);
-		// tracking position of each operation
-		// building the tree
+		let equation_tree = this.GenTree(this.m_equation);
+		return equation_tree.Calculate();
 	}
 
-	FindOperations() {
+	GenTree(_equation) {
+		// tokenization
+		let [tokenized_equation, operation_priority] = this.Tokenize(_equation);
+
+		for(let i=0;i<operation_priority.length;++i) {
+			for(let j=0;j<operation_priority[i].length;++j) {
+				tokenized_equation.PrintList();
+				let operation_token = operation_priority[i][j];
+
+				let left_token = operation_token.Previous();
+				let right_token = operation_token.Next();
+
+				let operation_previous_token = left_token.Previous();
+				let operation_next_token = right_token.Next();
+
+				if(left_token == null || right_token == null || left_token.IsNull())
+					throw new Error("Syntax Error. Operation must be between 2 numbers");
+
+				// convert left and right token to tree node
+				if(!(left_token instanceof TreeNode))
+					if(left_token.GetType() == EQUATION_TOKENS.NUMBER) //validate left is numeric value
+						left_token = new TreeNode(EQUATION_TOKENS.NUMBER, left_token.GetValue());
+					else // handle nested
+						throw new Error("Syntax Error. Operation must be between 2 numbers");
+
+				if(!(right_token instanceof TreeNode))
+					if(right_token.GetType() == EQUATION_TOKENS.NUMBER) // validate right is numeric value
+						right_token = new TreeNode(EQUATION_TOKENS.NUMBER, right_token.GetValue());
+					else // handle nested
+						throw new Error("Syntax Error. Operation must be between 2 numbers");
+
+				// generate tree node for the operation
+				let operation_node = new TreeNode(operation_token.GetType(), operation_token.GetValue());
+				operation_node.SetLeftChild(left_token);
+				operation_node.SetRightChild(right_token);
+				operation_node.SetPrevious(operation_previous_token);
+				operation_node.SetNext(operation_next_token);
+
+				// replace the operation and the 2 numeric values with the tree node
+				operation_node.SetPrevious(left_token.Previous());
+				operation_node.SetNext(right_token.Next());
+
+				operation_previous_token.SetNext(operation_node);
+
+				if(operation_next_token != null)
+					operation_next_token.SetPrevious(operation_node);
+				/*left_token.Previous().SetNext(operation_node);
+
+				if(right_token.Next() != null)
+					right_token.SetNext(operation_node);*/
+			}
+		}
+
+		return tokenized_equation.Next();
+
+		// building the equation tree
+		//while(tokenized_equation != null) {
+			//console.log(tokenized_equation.m_value + " : " + tokenized_equation.GetType());
+			//console.log(tokenized_equation.Previous(), tokenized_equation, tokenized_equation.Next());
+
+			//tokenized_equation = tokenized_equation.Next();
+		//}
+
+		/*for(let i=0;i<operation_priority.length;++i) {
+			for(let j=0;j<operation_priority[i].length;++j) {
+
+				let operation_node = operation_priority[i][j];
+				let left_value = operation_node.Previous();
+				let right_value = operation_node.Next();
+
+				if(left_value == null || right_value == null)
+					throw new Error("Invalid Syntax");
+
+				if(typeof left_value == Token)
+					if(left_value.GetType() == EQUATION_TOKENS.NUMBER)
+						left_value = new TreeNode(NODE_TYPE.NUMBER, left_value.GetValue());
+					else if(left_value.GetType() == EQUATION_TOKENS.NESTED)
+						left_value = this.GenTree(left_value.GetValue());
+					else
+						throw new Error("Invalid Syntax, operations can only be performed between 2 values");
+
+				if(typeof right_value == Token)
+					if(right_value.GetType() == EQUATION_TOKENS.NUMBER)
+						right_value = new TreeNode(NODE_TYPE.NUMBER, right_value.GetValue());
+					else if(right_value.GetType() == EQUATION_TOKENS.NESTED)
+						right_value = this.GenTree(right_value.GetValue());
+					else
+						throw new Error("Invalid Syntax, operations can only be performed between 2 values");
+
+				let type;
+				switch(operation_node.GetType()) {
+					case EQUATION_TOKENS.MULTIPLY:
+						type = NODE_TYPE.MULTIPLY;
+						break;
+					case EQUATION_TOKENS.DIVIDE:
+						type = NODE_TYPE.DIVIDE;
+						break;
+					case EQUATION_TOKENS.SUBTRACT:
+						type = NODE_TYPE.SUBTRACT;
+						break;
+					case EQUATION_TOKENS.ADD:
+						type = NODE_TYPE.ADD;
+						break;
+					case EQUATION_TOKENS.EXPONENT:
+						type = NODE_TYPE.EXPONENT;
+						break;
+				}
+				let new_tree_node = new TreeNode(type, operation_node.GetValue());
+				new_tree_node.SetLeftChild(left_value);
+				new_tree_node.SetRightChild(right_value);
+
+				new_tree_node.SetPrevious(operation_node.Previous().Previous());
+				new_tree_node.SetNext(operation_node.Next().Next());
+				// create the node
+				// create the child node
+				// append the node to list
+			}
+		}*/
+
+		// return the remaining tree node
 	}
 
 	// note: clean up code, disallow numbers with 2 "."
@@ -164,7 +279,7 @@ class Equation {
 			numeric_value = "";
 		}
 
-		return [ starting_token.Next(), operation_priority ];
+		return [ starting_token, operation_priority ];
 	}
 
 	GetTokenType(_c) {
@@ -205,11 +320,30 @@ class Token {
 		this.m_tokenType = _tokenType;
 		this.m_value = _value;
 		this.m_next = null;
-		this.m_previous = _value == null || _previous.m_value == null ? null : _previous;
+		this.m_previous = _previous;
+	}
+
+	PrintList() {
+		let current_node = this;
+		let result = "";
+		while(current_node != null) {
+			result += current_node.GetValue() + " ";
+			current_node = current_node.Next();
+		}
+
+		console.log(result);
+	}
+
+	IsNull() {
+		return this.m_tokenType == null;
 	}
 
 	SetNext(_next) {
 		this.m_next = _next;
+	}
+
+	SetPrevious(_prev) {
+		this.m_previous = _prev;
 	}
 
 	Next() {
@@ -223,14 +357,63 @@ class Token {
 	GetType() {
 		return this.m_tokenType;
 	}
+
+	GetValue() {
+		return this.m_value;
+	}
 }
 
 class TreeNode {
 	constructor(_type, _value) {
-		this.m_type = _type
+		this.m_type = _type;
 		this.m_leftChild = null;
 		this.m_rightChild = null;
 		this.m_value = _value;
+		this.m_previous;
+		this.m_next;
+	}
+
+	GetValue() {
+		return this.m_value;
+	}
+
+	IsNull() {
+		return this.m_type == null;
+	}
+
+	Calculate() {
+		//if(this.m_type == EQUATION_TOKENS.NUMBER)
+			//return this.m_value;
+		switch(this.m_type) {
+			case EQUATION_TOKENS.NUMBER:
+				return this.m_value;
+			case EQUATION_TOKENS.MULTIPLY:
+				return this.m_leftChild.Calculate() * this.m_rightChild.Calculate();
+			case EQUATION_TOKENS.DIVIDE:
+				return this.m_leftChild.Calculate() / this.m_rightChild.Calculate();
+			case EQUATION_TOKENS.ADD:
+				return this.m_leftChild.Calculate() + this.m_rightChild.Calculate();
+			case EQUATION_TOKENS.SUBTRACT:
+				return this.m_leftChild.Calculate() - this.m_rightChild.Calculate();
+			case EQUATION_TOKENS.EXPONENT:
+				return Math.pow(this.m_leftChild.Calculate(), this.m_rightChild.Calculate());
+		}
+	}
+
+	SetPrevious(_prev) {
+		this.m_previous = _prev;
+	}
+
+	SetNext(_next) {
+		this.m_next = _next;
+	}
+
+	Previous() {
+		return this.m_previous;
+	}
+
+	Next() {
+		return this.m_next;
 	}
 
 	SetLeftChild(_node) {
