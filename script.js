@@ -8,12 +8,17 @@ function Initialize() {
 }
 
 function Evaluate(_equation) {
-	const equation = new Equation(_equation);
-	let ans = equation.Compile();
+	try {
+		const equation = new Equation(_equation);
+		let ans = equation.Compile();
 
-	const output_text = document.getElementById("output");
-	//output_text.innerText = "Output: " + equation.Calculate();
-	output_text.innerText = "Output: " + ans;
+		const output_text = document.getElementById("output");
+		//output_text.innerText = "Output: " + equation.Calculate();
+		output_text.innerText = "Output: " + ans;
+	} catch(e) {
+		const output_text = document.getElementById("output");
+		output_text.innerText = e;
+	}
 }
 
 window.addEventListener("load", () => {

@@ -105,6 +105,9 @@ class Equation {
 			operation_priority[i] = [];
 
 		for(const c of _equationString) {
+			if(c == " ")
+				continue;
+
 			const char_type = this.GetTokenType(c);
 
 			if(char_type == null)
@@ -243,6 +246,13 @@ class Token {
 		this.m_value = _value;
 		this.m_next = null;
 		this.m_previous = _previous;
+	}
+
+	Calculate() {
+		if(this.m_tokenType == EQUATION_TOKENS.NUMBER)
+			return this.m_value;
+
+		throw new Error("Equation Error, invalid syntax");
 	}
 
 	PrintList() {
