@@ -3,6 +3,18 @@
 	margin: 0;
 }
 
+button {
+	cursor: pointer;
+}
+
+hr {
+	box-shadow: 0 0 5px #777777;
+	margin: 20px 0;
+	border: 1px solid #CCCCCC;
+	width: 80vw;
+	transform: translate(10vw, 0);
+}
+
 .evaluator {
 	position: relative;
 	left: 50%;
@@ -20,4 +32,100 @@
 .output {
 	font-size: 18px;
 	text-align: center;
+}
+
+.content {
+	display: flex;
+}
+
+.content > * {
+	flex: 1;
+	margin: 10px 0;
+}
+
+.section-label {
+	font-size: 24px;
+	display: inline-block;
+	border-bottom: 3px solid #555555;
+	position: relative;
+	left: 50%;
+	padding: 0 15px;
+	transform: translate(-50%, 0);
+}
+
+.list-parent {
+	display: flex;
+	flex-direction: column;
+	margin: 20px 0;
+	align-items: center;
+}
+
+.list-parent .variable-container {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	padding-left: 15px;
+	border-radius: 15px;
+	overflow: hidden;
+	box-shadow: 2px 2px 5px #888888;
+	margin: 10px 0;
+}
+
+.list-parent .variable-container * {
+	font-size: 20px;
+	border: none;
+	outline: 0;
+}
+
+.list-parent .variable-container .variable-status {
+	cursor: pointer;
+}
+
+.list-parent .variable-container .variable-valid {
+	color: green;
+}
+
+.list-parent .variable-container .variable-invalid {
+	color: #FFBE32;
+}
+
+.list-parent .variable-container input {
+	width: 50%;
+	padding: 5px 10px;
+	font-size: 14px;
+	background-color: #DDDDDD;
+	margin: 0 5px;
+}
+
+.list-parent .variable-container button {
+	border-top-left-radius: 0;
+	border-top-right-radius: 15px;
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 15px;
+	height: 40px;
+	width: 50px;
+	font-size: 18px;
+	color: red;
+	border: 2px solid red;
+	transition: all 0.3s ease;
+}
+
+.list-parent .variable-container button:hover {
+	background-color: red;
+	color: white;
+}
+
+.append-variable {
+	border: 2px dotted #BBBBBB;
+	width: 60%;
+	font-size: 14px;
+	padding: 10px;
+	border-radius: 15px;
+	color: #777777;
+}
+
+@media only screen and ( max-width: 1100px ) {
+	.content {
+		flex-direction: column;
+	}
 }

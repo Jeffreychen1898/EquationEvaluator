@@ -5,7 +5,8 @@ const EQUATION_TOKENS = {
 	ADD: 3,
 	EXPONENT: 4,
 	NUMBER: 5,
-	NESTED: 6
+	VARIABLE: 6,
+	NESTED: 7
 };
 
 const CHAR_TYPE = {
@@ -16,7 +17,8 @@ const CHAR_TYPE = {
 	ADD: 4,
 	EXPONENT: 5,
 	PARENTHESIS_OPEN: 6,
-	PARENTHESIS_CLOSE: 7
+	VAR_CHAR: 7,
+	PARENTHESIS_CLOSE: 8
 };
 
 const OPERATION_PRIORITY = {
@@ -57,16 +59,16 @@ class Equation {
 
 				// convert left and right token to tree node
 				if(!(left_token instanceof TreeNode))
-					if(left_token.GetType() == EQUATION_TOKENS.NUMBER) //validate left is numeric value
-						left_token = new TreeNode(EQUATION_TOKENS.NUMBER, left_token.GetValue());
+					if(left_token.GetType() == EQUATION_TOKENS.NUMBER || left_token.GetType() == EQUATION_TOKENS.VARIABLE) //validate left is numeric value
+						left_token = new TreeNode(left_token.GetType(), left_token.GetValue());
 					else if(left_token.GetType() == EQUATION_TOKENS.NESTED)
 						left_token = this.GenTree(left_token.GetValue());
 					else
 						throw new Error("Syntax Error. Operation must be between 2 numbers");
 
 				if(!(right_token instanceof TreeNode))
-					if(right_token.GetType() == EQUATION_TOKENS.NUMBER) // validate right is numeric value
-						right_token = new TreeNode(EQUATION_TOKENS.NUMBER, right_token.GetValue());
+					if(right_token.GetType() == EQUATION_TOKENS.NUMBER || right_token.GetType() == EQUATION_TOKENS.VARIABLE) // validate right is numeric value
+						right_token = new TreeNode(right_token.GetType(), right_token.GetValue());
 					else if(right_token.GetType() == EQUATION_TOKENS.NESTED)
 						right_token = this.GenTree(right_token.GetValue());
 					else
@@ -96,7 +98,7 @@ class Equation {
 		const starting_token = new Token(null, null, null);
 		let current_token_elem = starting_token;
 		let previous_token = null;
-		let numeric_value = "";
+		let value = "";
 		let parenthesis_counter = 0;
 		let parenthesis_content = "";
 
@@ -135,8 +137,11 @@ class Equation {
 			// token type == previous token type
 			if(char_type == previous_token) {
 				if(char_type == CHAR_TYPE.NUMBER) {
-					// handle decimal points
-					numeric_value += c;
+					value += c;
+					continue;
+				} else if(char_type == CHAR_TYPE.VAR_CHAR) {
+					// handle variable names
+					value += c;
 					continue;
 				}
 
@@ -147,17 +152,26 @@ class Equation {
 			if(char_type != previous_token) {
 				// closing
 				if(previous_token == CHAR_TYPE.NUMBER) {
-					const new_token = new Token(current_token_elem, EQUATION_TOKENS.NUMBER, parseFloat(numeric_value));
+					const new_token = new Token(current_token_elem, EQUATION_TOKENS.NUMBER, parseFloat(value));
 					current_token_elem.SetNext(new_token);
 					current_token_elem = new_token;
-					numeric_value = "";
+					value = "";
+				}
+				if(previous_token == CHAR_TYPE.VAR_CHAR) {
+					const new_token = new Token(current_token_elem, EQUATION_TOKENS.VARIABLE, value);
+					current_token_elem.SetNext(new_token);
+					current_token_elem = new_token;
+					value = "";
 				}
 
 				// opening
 				let new_token;
 				switch(char_type) {
 					case CHAR_TYPE.NUMBER:
-						numeric_value += c;
+						value += c;
+						break;
+					case CHAR_TYPE.VAR_CHAR:
+						value += c;
 						break;
 					case CHAR_TYPE.MULTIPLY:
 						new_token = new Token(current_token_elem, EQUATION_TOKENS.MULTIPLY, c);
@@ -198,10 +212,16 @@ class Equation {
 		}
 
 		if(previous_token == CHAR_TYPE.NUMBER) {
-			const new_token = new Token(current_token_elem, EQUATION_TOKENS.NUMBER, parseFloat(numeric_value));
+			const new_token = new Token(current_token_elem, EQUATION_TOKENS.NUMBER, parseFloat(value));
 			current_token_elem.SetNext(new_token);
 			current_token_elem = new_token;
-			numeric_value = "";
+			value = "";
+		}
+		if(previous_token == CHAR_TYPE.VAR_CHAR) {
+			const new_token = new Token(current_token_elem, EQUATION_TOKENS.VARIABLE, value);
+			current_token_elem.SetNext(new_token);
+			current_token_elem = new_token;
+			value = "";
 		}
 
 		return [ starting_token, operation_priority ];
@@ -232,6 +252,14 @@ class Equation {
 		if(_c == ".")
 			return CHAR_TYPE.NUMBER;
 
+		// variable names
+		if(_c.charCodeAt(0) > 64 && _c.charCodeAt(0) < 91) // A-Z
+			return CHAR_TYPE.VAR_CHAR;
+		if(_c.charCodeAt(0) > 96 && _c.charCodeAt(0) < 123) // a-z
+			return CHAR_TYPE.VAR_CHAR;
+		if(_c.charCodeAt(0) == 95) // _
+			return CHAR_TYPE.VAR_CHAR;
+
 		return null;
 	}
 
@@ -251,6 +279,14 @@ class Token {
 	Calculate() {
 		if(this.m_tokenType == EQUATION_TOKENS.NUMBER)
 			return this.m_value;
+
+		if(this.m_type == EQUATION_TOKENS.VARIABLE) {
+			for(let i=0;i<variable_names.length;++i) {
+				if(variable_names[i] == this.m_value) {
+					return variable_values[i];
+				}
+			}
+		}
 
 		throw new Error("Equation Error, invalid syntax");
 	}
@@ -314,8 +350,14 @@ class TreeNode {
 	}
 
 	Calculate() {
-		//if(this.m_type == EQUATION_TOKENS.NUMBER)
-			//return this.m_value;
+		if(this.m_type == EQUATION_TOKENS.VARIABLE) {
+			for(let i=0;i<variable_names.length;++i) {
+				if(variable_names[i] == this.m_value) {
+					return variable_values[i];
+				}
+			}
+		}
+
 		switch(this.m_type) {
 			case EQUATION_TOKENS.NUMBER:
 				return this.m_value;
